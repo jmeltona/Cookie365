@@ -10,8 +10,7 @@ Mandatory
 Optional:
  -u <user>: if you are not using ADFS you can specify a username with the format user@domain.com
  -p <password>: if you are not using ADFS you need to specify your password
- -d <domain>: if you are using ADFS but your internal domain is different from Office365 domain you 
-              can specify a different Office365 domain with the format domain.com 
+ -d <domain>: if you are using ADFS but your internal domain is different from Office365 domain you can specify a different Office365 domain with the format domain.com 
  -quiet: be quiet...
  -mount: if you specify a disk name (e.g. z:) it will be used, otherwise the OS will assign the first available disk. 
          Optionally you can specify the -homedir option in order to mount the drive with the path for the specific 
