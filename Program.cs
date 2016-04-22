@@ -131,9 +131,9 @@ namespace Cookie365
                             // The cookie has to be set for the domain (contoso.sharepoint.com), otherwise it will not work
                             String baseUrl = sharepointUri.Scheme + "://" + sharepointUri.Host;
 
-                            if (InternetSetCookie(baseUrl, null, cookies["FedAuth"].ToString() + "; Expires = " + cookies["FedAuth"].Expires.AddMinutes(expire).ToString("R")))
+                            if (InternetSetCookie(baseUrl, null, cookies["FedAuth"].ToString() + "; Expires = " + cookies["FedAuth"].Expires.ToUniversalTime().AddMinutes(expire).ToString("R")))
                             {
-                                 if (InternetSetCookie(baseUrl, null, cookies["rtFA"].ToString() + "; Expires = " + cookies["rtFA"].Expires.AddMinutes(expire).ToString("R"))) ;
+                                if (InternetSetCookie(baseUrl, null, cookies["rtFA"].ToString() + "; Expires = " + cookies["rtFA"].Expires.ToUniversalTime().AddMinutes(expire).ToString("R")))
                                 {
                                   if (!quiet) Console.WriteLine("[OK]. Expiry = " + cookies["FedAuth"].Expires.AddMinutes(expire).ToString("R")); 
                                   if (mount)
