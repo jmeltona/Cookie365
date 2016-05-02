@@ -104,7 +104,7 @@ namespace Cookie365
                     sharepointUrl = CommandLine["s"];
                     sharepointUri = new Uri(sharepointUrl);
 
-                    if (CommandLine["prompt"].ToLower() == "y")
+                    if (CommandLine["prompt"] != null)
                     {
                         Console.WriteLine("Enter a username: ");
                         username = Console.ReadLine();
