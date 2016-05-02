@@ -7,7 +7,7 @@ Usage:
 
 > 
 
-> Cookie365 -s URL [-u user@domain.com | -d domain.com] [-p {password}] [-quiet] [-mount [disk] [-homedir]]
+> Cookie365 -s URL [-prompt] [-u user@domain.com | -d domain.com] [-p {password}] [-quiet] [-mount [disk] [-homedir]]
 
 Mandatory
 
@@ -17,6 +17,7 @@ Mandatory
 
 Optional:
 
+>  -prompt: prompts user to input username and password in console
 
 >  -u <user>: if you are not using ADFS you can specify a username with the format user@domain.com
 
