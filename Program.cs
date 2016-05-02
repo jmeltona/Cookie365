@@ -28,11 +28,51 @@ using System.Net;
 using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
 
-
 namespace Cookie365
 {
+
     class Program
     {
+
+        public static string ReadPassword(char mask)
+        {
+            const int ENTER = 13, BACKSP = 8, CTRLBACKSP = 127;
+            int[] FILTERED = { 0, 27, 9, 10 /*, 32 space, if you care */ }; // const
+
+            var pass = new Stack<char>();
+            char chr = (char)0;
+
+            while ((chr = System.Console.ReadKey(true).KeyChar) != ENTER)
+            {
+                if (chr == BACKSP)
+                {
+                    if (pass.Count > 0)
+                    {
+                        System.Console.Write("\b \b");
+                        pass.Pop();
+                    }
+                }
+                else if (chr == CTRLBACKSP)
+                {
+                    while (pass.Count > 0)
+                    {
+                        System.Console.Write("\b \b");
+                        pass.Pop();
+                    }
+                }
+                else if (FILTERED.Count(x => chr == x) > 0) { }
+                else
+                {
+                    pass.Push((char)chr);
+                    System.Console.Write(mask);
+                }
+            }
+
+            System.Console.WriteLine();
+
+            return new string(pass.Reverse().ToArray());
+        }
+
         // Import DLL to set Cookies in IE
         [DllImport("wininet.dll", CharSet = CharSet.Auto, SetLastError = true)]
         static extern bool InternetSetCookie(string lpszUrlName, string lpszCookieName, string lpszCookieData);
@@ -64,21 +104,42 @@ namespace Cookie365
                     sharepointUrl = CommandLine["s"];
                     sharepointUri = new Uri(sharepointUrl);
 
-                    // If username is specified use it, otherwise get the user UPN from AD
-                    if (CommandLine["u"] != null) username = CommandLine["u"];
+                    if (CommandLine["prompt"].ToLower() == "y")
+                    {
+                        Console.WriteLine("Enter a username: ");
+                        username = Console.ReadLine();
+                        Console.WriteLine("Enter a password: ");
+                        password = ReadPassword('*');
+                    }
                     else
-                    { 
-                        username = System.DirectoryServices.AccountManagement.UserPrincipal.Current.UserPrincipalName;
-                        if (username != null) { if (CommandLine["d"] != null) username = username.Split('@')[0] + "@" + CommandLine["d"]; }
+                    {
+                        // If username is specified use it, otherwise get the user UPN from AD
+                        if (CommandLine["u"] != null)
+                        {
+                            username = CommandLine["u"];
+                        }
                         else
                         {
-                            Console.WriteLine("Username cannot be empty");
-                            return;
+                            username = System.DirectoryServices.AccountManagement.UserPrincipal.Current.UserPrincipalName;
+                            if (username != null)
+                            {
+                                if (CommandLine["d"] != null)
+                                    username = username.Split('@')[0] + "@" + CommandLine["d"];
+                            }
+                            else
+                            {
+                                Console.WriteLine("Username cannot be empty");
+                                return;
+                            }
+                        }
+
+                        // If password is specified, use it, otherwise try integrated authentication
+                        if (CommandLine["p"] != null)
+                        {
+                            password = CommandLine["p"];
+                            useIntegratedAuth = false;
                         }
                     }
-
-                    // If password is specified, use it, otherwise try integrated authentication
-                    if (CommandLine["p"] != null) { password = CommandLine["p"]; useIntegratedAuth = false; }
 
                     // Set the flag for quiet mode
                     if (CommandLine["quiet"] != null) { quiet = true; }             
@@ -135,13 +196,15 @@ namespace Cookie365
                             {
                                 if (InternetSetCookie(baseUrl, null, cookies["rtFA"].ToString() + "; Expires = " + cookies["rtFA"].Expires.ToUniversalTime().AddMinutes(expire).ToString("R")))
                                 {
-                                  if (!quiet) Console.WriteLine("[OK]. Expiry = " + cookies["FedAuth"].Expires.AddMinutes(expire).ToString("R")); 
+                                  if (!quiet)
+                                        Console.WriteLine("[OK]. Expiry = " + cookies["FedAuth"].Expires.AddMinutes(expire).ToString("R")); 
                                   if (mount)
                                   {
                                       try
                                       {
                                           String cmdArgs = "/c net use " + disk + " \\\\" + sharepointUri.Host + "@ssl" + sharepointUri.PathAndQuery.Replace("/", "\\") + homedir;
-                                          if (!quiet) Console.Write("Mounting Share..."+cmdArgs);
+                                          if (!quiet)
+                                                Console.Write("Mounting Share..." + cmdArgs);
                                           System.Diagnostics.Process Process = new System.Diagnostics.Process();
                                           Process.StartInfo = new System.Diagnostics.ProcessStartInfo("cmd", cmdArgs);
                                           Process.StartInfo.RedirectStandardOutput = true;
