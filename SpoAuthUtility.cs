@@ -155,7 +155,7 @@ namespace Cookie365
                     };
 
                     cc.Add(this.spSiteUrl, samlAuthCookie);
-
+                    
                     Cookie rtFACookie = new Cookie("rtFA", cookies.RtFA)
                     {
                         Path = "/",
@@ -166,7 +166,7 @@ namespace Cookie365
                     };
 
                     cc.Add(this.spSiteUrl, rtFACookie);
-
+                    
                     this.cookieContainer = cc;
                 }
             }
@@ -230,19 +230,19 @@ namespace Cookie365
 
             try
             { 
-             byte[] response = await HttpUtility.SendHttpRequest(
-                 new Uri(msoHrdUrl),
-                 HttpMethod.Post,
-                 new MemoryStream(Encoding.UTF8.GetBytes(String.Format("handler=1&login={0}", this.username))), // pass in the login name in the body of the form
-                 "application/x-www-form-urlencoded",
-                 null);
+                byte[] response = await HttpUtility.SendHttpRequest(
+                    new Uri(msoHrdUrl),
+                    HttpMethod.Post,
+                    new MemoryStream(Encoding.UTF8.GetBytes(String.Format("handler=1&login={0}", this.username))), // pass in the login name in the body of the form
+                    "application/x-www-form-urlencoded",
+                    null);
 
-             var serializer = new JavaScriptSerializer();
-             var deserializedResponse = serializer.Deserialize<Dictionary<string, object>>(Encoding.UTF8.GetString(response, 0, response.Length));
-             corpAdfsProxyUrl = deserializedResponse.ContainsKey("AuthURL") ? new Uri(deserializedResponse["AuthURL"] as string) : null;
-             if (verbose) {
-                 if (corpAdfsProxyUrl != null) Console.WriteLine("[OK]"); else Console.WriteLine("[KO] (Probably not ADFS Federated)");
-             }
+                var serializer = new JavaScriptSerializer();
+                var deserializedResponse = serializer.Deserialize<Dictionary<string, object>>(Encoding.UTF8.GetString(response, 0, response.Length));
+                corpAdfsProxyUrl = deserializedResponse.ContainsKey("AuthURL") ? new Uri(deserializedResponse["AuthURL"] as string) : null;
+                if (verbose) {
+                    if (corpAdfsProxyUrl != null) Console.WriteLine("[OK]"); else Console.WriteLine("[KO] (Probably not ADFS Federated)");
+                }
             }
             catch (Exception e)
             {
@@ -380,103 +380,103 @@ namespace Cookie365
 
             SamlSecurityToken samlST = new SamlSecurityToken();
             byte[] saml11RTBytes = null;
-             string logonToken = null;
-             try
-             { // find out whether the user's domain is a federated domain
-                 this.adfsAuthUrl = await GetAdfsAuthUrl();
+            string logonToken = null;
+            try
+            { // find out whether the user's domain is a federated domain
+                this.adfsAuthUrl = await GetAdfsAuthUrl();
 
-                 // get logon token using windows integrated auth when the user is connected to the corporate network 
-                 if (this.adfsAuthUrl != null && this.useIntegratedWindowsAuth)
-                 {
-                     UriBuilder ub = new UriBuilder();
-                     ub.Scheme = this.adfsAuthUrl.Scheme;
-                     ub.Host = this.adfsAuthUrl.Host;
-                     ub.Path = string.Format("{0}auth/integrated/", this.adfsAuthUrl.LocalPath);
+                // get logon token using windows integrated auth when the user is connected to the corporate network 
+                if (this.adfsAuthUrl != null && this.useIntegratedWindowsAuth)
+                {
+                    UriBuilder ub = new UriBuilder();
+                    ub.Scheme = this.adfsAuthUrl.Scheme;
+                    ub.Host = this.adfsAuthUrl.Host;
+                    ub.Path = string.Format("{0}auth/integrated/", this.adfsAuthUrl.LocalPath);
 
-                     // specify in the query string we want a logon token to present to the Microsoft Federation Gateway
-                     // for the corresponding user
-                     ub.Query = String.Format("{0}&wa=wsignin1.0&wtrealm=urn:federation:MicrosoftOnline", this.adfsAuthUrl.Query.Remove(0, 1)).
-                         Replace("&username=", String.Format("&username={0}", this.username));
+                    // specify in the query string we want a logon token to present to the Microsoft Federation Gateway
+                    // for the corresponding user
+                    ub.Query = String.Format("{0}&wa=wsignin1.0&wtrealm=urn:federation:MicrosoftOnline", this.adfsAuthUrl.Query.Remove(0, 1)).
+                        Replace("&username=", String.Format("&username={0}", this.username));
 
-                     this.adfsIntegratedAuthUrl = ub.Uri;
+                    this.adfsIntegratedAuthUrl = ub.Uri;
 
-                     // get the logon token from the corporate ADFS using Windows Integrated Auth
-                     logonToken = await GetAdfsSAMLTokenWinAuth();
+                    // get the logon token from the corporate ADFS using Windows Integrated Auth
+                    logonToken = await GetAdfsSAMLTokenWinAuth();
 
-                     if (!string.IsNullOrEmpty(logonToken))
-                     {
-                         // generate the WS-Trust security token request SOAP message passing in the logon token we got from the corporate ADFS
-                         // and the site we want access to 
-                         saml11RTBytes = Encoding.UTF8.GetBytes(ParameterizeSoapRequestTokenMsgWithAssertion(
-                             this.spSiteUrl.ToString(),
-                             logonToken,
-                             msoStsUrl));
-                     }
-                 }
+                    if (!string.IsNullOrEmpty(logonToken))
+                    {
+                        // generate the WS-Trust security token request SOAP message passing in the logon token we got from the corporate ADFS
+                        // and the site we want access to 
+                        saml11RTBytes = Encoding.UTF8.GetBytes(ParameterizeSoapRequestTokenMsgWithAssertion(
+                            this.spSiteUrl.ToString(),
+                            logonToken,
+                            msoStsUrl));
+                    }
+                }
 
-                 // get logon token using the user's corporate credentials. Likely when not connected to the corporate network
-                 if (logonToken == null && this.adfsAuthUrl != null && !string.IsNullOrEmpty(password))
-                 {
-                     logonToken = await GetAdfsSAMLTokenUsernamePassword(); // get the logon token from the corporate ADFS proxy usernamemixed enpoint
+                // get logon token using the user's corporate credentials. Likely when not connected to the corporate network
+                if (logonToken == null && this.adfsAuthUrl != null && !string.IsNullOrEmpty(password))
+                {
+                    logonToken = await GetAdfsSAMLTokenUsernamePassword(); // get the logon token from the corporate ADFS proxy usernamemixed enpoint
 
-                     if (logonToken != null)
-                     {
-                         // generate the WS-Trust security token request SOAP message passing in the logon token we got from the corporate ADFS
-                         // and the site we want access to 
-                         saml11RTBytes = Encoding.UTF8.GetBytes(ParameterizeSoapRequestTokenMsgWithAssertion(
-                           this.spSiteUrl.ToString(),
-                           logonToken,
-                           msoStsUrl));
-                     }
-                 }
+                    if (logonToken != null)
+                    {
+                        // generate the WS-Trust security token request SOAP message passing in the logon token we got from the corporate ADFS
+                        // and the site we want access to 
+                        saml11RTBytes = Encoding.UTF8.GetBytes(ParameterizeSoapRequestTokenMsgWithAssertion(
+                        this.spSiteUrl.ToString(),
+                        logonToken,
+                        msoStsUrl));
+                    }
+                }
 
-                 if (logonToken == null && this.adfsAuthUrl == null && (!string.IsNullOrEmpty(password))) // login with O365 credentials. Not a federated login.
-                 {
-                     // generate the WS-Trust security token request SOAP message passing in the user's credentials and the site we want access to 
-                     saml11RTBytes = Encoding.UTF8.GetBytes(ParameterizeSoapRequestTokenMsgWithUsernamePassword(
-                         this.spSiteUrl.ToString(),
-                         this.username,
-                         this.password,
-                         msoStsUrl));
-                 }
+                if (logonToken == null && this.adfsAuthUrl == null && (!string.IsNullOrEmpty(password))) // login with O365 credentials. Not a federated login.
+                {
+                    // generate the WS-Trust security token request SOAP message passing in the user's credentials and the site we want access to 
+                    saml11RTBytes = Encoding.UTF8.GetBytes(ParameterizeSoapRequestTokenMsgWithUsernamePassword(
+                        this.spSiteUrl.ToString(),
+                        this.username,
+                        this.password,
+                        msoStsUrl));
+                }
 
-                 if (saml11RTBytes != null)
-                 {
-                     // make the post request to MSO STS with the WS-Trust payload
-                     byte[] response = await HttpUtility.SendHttpRequest(
-                         new Uri(msoStsUrl),
-                         HttpMethod.Post,
-                         new MemoryStream(saml11RTBytes),
-                         "application/soap+xml; charset=utf-8",
-                         null);
+                if (saml11RTBytes != null)
+                {
+                    // make the post request to MSO STS with the WS-Trust payload
+                    byte[] response = await HttpUtility.SendHttpRequest(
+                        new Uri(msoStsUrl),
+                        HttpMethod.Post,
+                        new MemoryStream(saml11RTBytes),
+                        "application/soap+xml; charset=utf-8",
+                        null);
 
-                     StreamReader sr = new StreamReader(new MemoryStream(response));
+                    StreamReader sr = new StreamReader(new MemoryStream(response));
 
-                     // the SAML security token is in the BinarySecurityToken element of the message body
-                     XDocument xDoc = XDocument.Parse(sr.ReadToEnd());
-                     var binaryST = from e in xDoc.Descendants()
-                                    where e.Name == XName.Get("BinarySecurityToken", wsse)
-                                    select e;
+                    // the SAML security token is in the BinarySecurityToken element of the message body
+                    XDocument xDoc = XDocument.Parse(sr.ReadToEnd());
+                    var binaryST = from e in xDoc.Descendants()
+                                where e.Name == XName.Get("BinarySecurityToken", wsse)
+                                select e;
 
-                     // get the security token expiration date from the message body
-                     var expires = from e in xDoc.Descendants()
-                                   where e.Name == XName.Get("Expires", wsu)
-                                   select e;
+                    // get the security token expiration date from the message body
+                    var expires = from e in xDoc.Descendants()
+                                where e.Name == XName.Get("Expires", wsu)
+                                select e;
 
-                     if (binaryST.FirstOrDefault() != null && expires.FirstOrDefault() != null)
-                     {
+                    if (binaryST.FirstOrDefault() != null && expires.FirstOrDefault() != null)
+                    {
 
-                         samlST.Token = Encoding.UTF8.GetBytes(binaryST.FirstOrDefault().Value);
-                         samlST.Expires = DateTime.Parse(expires.FirstOrDefault().Value);
-                     }
-                 }
-                 if (verbose) Console.WriteLine("Retrieving STS Token...[OK]");
-             }
+                        samlST.Token = Encoding.UTF8.GetBytes(binaryST.FirstOrDefault().Value);
+                        samlST.Expires = DateTime.Parse(expires.FirstOrDefault().Value);
+                    }
+                }
+                if (verbose) Console.WriteLine("Retrieving STS Token...[OK]");
+            }
             catch (Exception e)
-             { 
+            { 
                 Console.WriteLine("Retrieving STS Token...[ERROR]:" + e.Message);
                 throw new Exception("Problems retrieving STS Token");
-             }
+            }
             return samlST;
         }
 

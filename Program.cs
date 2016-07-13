@@ -85,7 +85,7 @@ namespace Cookie365
             Uri sharepointUri = null;
             string username = null;
             string password = null;
-            bool useIntegratedAuth = true;
+            bool useIntegratedAuth = false;
             string disk = null;
             bool mount = false;
             double expire = 0;
@@ -106,9 +106,18 @@ namespace Cookie365
 
                     if (CommandLine["prompt"] != null)
                     {
-                        Console.WriteLine("Enter a username: ");
-                        username = Console.ReadLine();
-                        Console.WriteLine("Enter a password: ");
+                        if (CommandLine["u"] != null)
+                        {
+                            username = CommandLine["u"];
+                            Console.WriteLine(username);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Enter your username: ");
+                            username = Console.ReadLine();
+                        }
+                      
+                        Console.WriteLine("Enter your password: ");
                         password = ReadPassword('*');
                     }
                     else
@@ -196,41 +205,57 @@ namespace Cookie365
                             {
                                 if (InternetSetCookie(baseUrl, null, cookies["rtFA"].ToString() + "; Expires = " + cookies["rtFA"].Expires.ToUniversalTime().AddMinutes(expire).ToString("R")))
                                 {
-                                  if (!quiet)
-                                        Console.WriteLine("[OK]. Expiry = " + cookies["FedAuth"].Expires.AddMinutes(expire).ToString("R")); 
-                                  if (mount)
-                                  {
-                                      try
-                                      {
-                                          String cmdArgs = "/c net use " + disk + " \\\\" + sharepointUri.Host + "@ssl" + sharepointUri.PathAndQuery.Replace("/", "\\") + homedir;
-                                          if (!quiet)
-                                                Console.Write("Mounting Share..." + cmdArgs);
-                                          System.Diagnostics.Process Process = new System.Diagnostics.Process();
-                                          Process.StartInfo = new System.Diagnostics.ProcessStartInfo("cmd", cmdArgs);
-                                          Process.StartInfo.RedirectStandardOutput = true;
-                                          Process.StartInfo.UseShellExecute = false;
-                                          Process.Start();
-                                          Process.WaitForExit();
-                                          String output = Process.StandardOutput.ReadToEnd();
-                                          if (!quiet)
-                                          {
-                                              Console.WriteLine("[OK]");
-                                              Console.WriteLine(output);
-                                          }
-                                      }
-                                      catch (Exception e)
-                                      { Console.WriteLine("[ERROR Mounting Share]:" + e.Message); }
-                                  }
+                                    if (!quiet)
+                                    {
+                                        Console.WriteLine("[OK]. Expiry = " + cookies["FedAuth"].Expires.AddMinutes(expire).ToString("R"));
+                                    }
+                                    if (mount)
+                                    {
+                                        try
+                                        {
+                                            String cmdArgs = "/c net use " + disk + " \\\\" + sharepointUri.Host + "@ssl" + sharepointUri.PathAndQuery.Replace("/", "\\") + homedir;
+                                            if (!quiet)
+                                                Console.WriteLine("Mounting Share..." + cmdArgs);
+                                            System.Diagnostics.Process Process = new System.Diagnostics.Process();
+                                            Process.StartInfo = new System.Diagnostics.ProcessStartInfo("cmd", cmdArgs);
+                                            Process.StartInfo.RedirectStandardOutput = true;
+                                            Process.StartInfo.UseShellExecute = false;
+                                            Process.Start();
+                                            Process.WaitForExit();
+                                            String output = Process.StandardOutput.ReadToEnd();
+                                            if (!quiet)
+                                            {
+                                                Console.WriteLine("[OK]");
+                                                Console.WriteLine(output);
+                                                Console.WriteLine("Press any key to continue...");
+                                                Console.ReadLine();
+                                            }
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            Console.WriteLine("[ERROR Mounting Share]:" + e.Message);
+                                            Console.WriteLine("Press any key to continue...");
+                                            Console.ReadLine();
+                                        }
+                                    }
                                 }
                             }
                         }
                         catch (Exception e)
-                        { Console.WriteLine("[ERROR setting Cookies]:" + e.Message); }
+                        {
+                            Console.WriteLine("[ERROR setting Cookies]:" + e.Message);
+                            Console.WriteLine("Press any key to continue...");
+                            Console.ReadLine();
+                        }
 
                     }
                 }
                 catch (Exception e)
-                { Console.WriteLine("[ERROR]:" + e.Message); }
+                {
+                    Console.WriteLine("[ERROR]:" + e.Message);
+                    Console.WriteLine("Press any key to continue...");
+                    Console.ReadLine();
+                }
             }
         }
 
